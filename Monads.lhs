@@ -1,27 +1,53 @@
-> data State s a = State (s -> (a,s))
+> import Control.Monad
 
-> type GCDState = (Int, Int)
+Reverse apply
 
-> gcd_s1' :: State GCDState Int
-> gcd_s1' = State (\s ->
->			let (x,y) = s in
->		 case compare x y of
->			 	EQ -> (x, (x,y))
->			 	LT -> f (y,x)
->			 	GT -> f (x, x-y))
->		where
->		f :: GCDState -> (Int, GCDState)
->		f = runState gcd_s1'
+ (>$>)	:: a -> (a -> b) -> b
+ x >$> f	= f x	-- f $ x 
 
-> runState :: State s a -> s -> (a,s)
-> runState (State f) init_st = f init_st
+ (>.>) :: (a -> b) -> (b -> c) -> (a -> c)
+ f >.> g = g .f
 
-> evalState :: State s a -> s -> a
-> evalState mv init_st = fst (runState mv init_st)
+ j :: a->a
+ j x = x
 
-> execState :: State s a -> s -> s
-> execState mv init_st = snd (runState mv init_st)
+ (>=>) :: (a-> m b) -> (b -> m c) -> (a -> mc)
+ f >=> g = \x -> (f x >= g)
 
-> run_gcd_s1'::Int -> Int -> Int
-> run_gcd_s1' x y = fst (runState gcd_s1' (x,y))
+ f :: Int -> Maybe Int
+ f x = if x `mod` 2 == 0 then Nothing else Just (2*x)
+
+ g :: Int -> Maybe Int
+ g x = if x `mod` 3 == 0 then Nothing else Just (3*x)
+
+ h :: Int -> Maybe Int
+ h x = if x `mod` 5 == 0 then Nothing else Just (5*x)
+
+ k :: Int -> Maybe Int
+ k = f >=> g >=> h
+
+or: 
+
+k x = f x >>= g >>= h
+
+Why?
+
+--k = f >=> g >=> h
+--	(f >=> g) >=> h
+--	(\x -> f x >>= g) >=> h	--definition of >=>
+--	let w = \x -> f x >>= h
+--	w >=> h
+--	\y -> w y >>= h 		--definition of >=>
+-- k y = w y >>= h			--definition of lambda function ... f = \x -> x+2 <==> f x = x+2
+-- k y = (\x -> f x >>= g) y >>= h	--expand w
+-- k y = f y >>= g >>=	h		--apply w to the value y... beta reduction
+-- k x = f x >>= g >>= h		--renaming y
+
+
+or:
+
+k x = do y <- f x
+	 z <- g y
+	 h z
+
 
